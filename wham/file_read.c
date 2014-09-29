@@ -250,7 +250,7 @@ free(line);
 return(current_window);
 }
 
-#if 0
+#ifndef HIST_READ
 // Read a datafile, dump it into the global histogram
 // If the second argument, have_energy, is nonzero, this tells us we should be 
 // looking for a third column in the datafile, containing the energy of the
@@ -386,7 +386,8 @@ int read_data(char *filename, int have_energy)
 				exit(-1);
 			}
 			if (index < 0 || index > NUM_BINS - 1) {
-				printf ("Bin index %d is out of range!\n", index);
+				printf ("Bin index %d in file %s is out of range!\n", \
+						index, filename);
 				exit(-1);
 			}
 			HISTOGRAM[index] = value;
