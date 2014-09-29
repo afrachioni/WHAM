@@ -32,7 +32,8 @@ double PERIOD;
 
 int main(int argc, char *argv[])
 {
-	printf ("This is Anthony's version which reads historgams rather than samples!\n");
+	printf ("This is Anthony's version, which reads historgams "
+			"from any timeseries file named *.hist.\n");
 /* moved to global
 double kT; // temperature
 */
