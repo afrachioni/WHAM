@@ -250,7 +250,6 @@ free(line);
 return(current_window);
 }
 
-#ifndef HIST_READ
 // Read a datafile, dump it into the global histogram
 // If the second argument, have_energy, is nonzero, this tells us we should be 
 // looking for a third column in the datafile, containing the energy of the
@@ -267,6 +266,8 @@ double time, value,energy;
 int vals;
 int index;
 int num_points;
+char *dot;
+int is_histogram;
 
 clear_HISTOGRAM();
 num_points = 0;
@@ -285,6 +286,9 @@ if (!file)
     //fclose(file);
     return -1;
     }
+
+dot = strrchr(filename, '.');
+is_histogram = dot != NULL && strcmp (dot, ".hist") == 0;
 
 line = fgets(line,LINESIZE,file);
 while (line != NULL)
@@ -311,18 +315,37 @@ while (line != NULL)
                 exit(-1);
                 }
             }
-        if ( (value < HIST_MAX) && (value > HIST_MIN) )
+		if (is_histogram)
+			{
+				printf ("Reading from histogram: %s\n", filename);
+				int index = (int) time;
+				if (index != time)
+					{
+					printf("Bin index %f in file %s is not an integer!\n",\
+							time, filename);
+					exit(-1);
+					}
+				if (index < 0 || index > NUM_BINS - 1)
+					{
+					printf ("Bin index %d in file %s is out of "
+							"range!\n", index, filename);
+					exit(-1);
+					}
+				HISTOGRAM[index] = value;
+				num_points += value;
+			}
+		else if ( (value < HIST_MAX) && (value > HIST_MIN) )
             {
-            index = (int) ((value - HIST_MIN) / BIN_WIDTH);
-            if (have_energy)
-                {
-                HISTOGRAM[index] += exp(-energy/kT);
-                }
-            else
-                {
-                HISTOGRAM[index]+= 1.0e0;
-                }
-            num_points++;
+			index = (int) ((value - HIST_MIN) / BIN_WIDTH);
+			if (have_energy)
+				{
+				HISTOGRAM[index] += exp(-energy/kT);
+				}
+			else
+				{
+				HISTOGRAM[index]+= 1.0e0;
+				}
+			num_points++;
             }
         }
     line = fgets(line,LINESIZE,file);
@@ -332,72 +355,3 @@ fclose(file);
 free(line);
 return num_points;
 }
-
-
-#else
-// Read a histogram from disk
-// Incompatible with per-sample energies
-// Second argument have_energy must be zero
-// Read a histogram, dump it into the global histogram
-// Return negative value on error, number of data points included
-// in the histogram otherwise
-//
-// clears HISTOGRAM as a side effect
-int read_data(char *filename, int have_energy)
-{
-	if (have_energy) {
-		printf ("Cannot use per-step energies when reading histograms\n");
-		exit(-1);
-	}
-	FILE *file;
-	char *line;
-	double value;
-	int vals;
-	int index;
-	int num_points;
-
-	clear_HISTOGRAM();
-	num_points = 0;
-
-	line = (char *) malloc(sizeof(char) * LINESIZE);
-	if (!line)
-	{
-		printf("couldn't allocate space for line\n");
-		exit(-1);
-	}
-
-	file = fopen(filename, "r");
-	if (!file) 
-	{
-		free(line);
-		//fclose(file);
-		return -1;
-	}
-
-	line = fgets(line,LINESIZE,file);
-	while (line != NULL)
-	{
-		if (line[0] != '#')
-		{
-			vals = sscanf(line,"%d %lf", &index, &value);
-			if (vals != 2)
-			{
-				printf("failure reading %s\n", filename);
-				exit(-1);
-			}
-			if (index < 0 || index > NUM_BINS - 1) {
-				printf ("Bin index %d in file %s is out of range!\n", \
-						index, filename);
-				exit(-1);
-			}
-			HISTOGRAM[index] = value;
-			num_points += value;
-		}
-		line = fgets(line,LINESIZE,file);
-	}
-
-	fclose(file);
-	free(line);
-	return num_points;
-}
-#endif
