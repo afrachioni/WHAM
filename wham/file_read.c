@@ -317,7 +317,6 @@ while (line != NULL)
             }
 		if (is_histogram)
 			{
-				printf ("Reading from histogram: %s\n", filename);
 				int index = (int) time;
 				if (index != time)
 					{
